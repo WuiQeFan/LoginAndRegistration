@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MemFireDB 用户认证</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            display: flex;
+            max-width: 900px;
+            width: 100%;
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+        
+        .illustration {
+            flex: 1;
+            background: linear-gradient(to bottom right, #667eea, #764ba2);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            color: white;
+            text-align: center;
+        }
+        
+        .illustration img {
+            width: 80%;
+            max-width: 300px;
+            margin-bottom: 30px;
+        }
+        
+        .illustration h2 {
+            font-size: 28px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        
+        .illustration p {
+            font-size: 16px;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+        
+        .form-container {
+            flex: 1;
+            padding: 50px 40px;
+            background: #fff;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .tab {
+            padding: 12px 30px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: 500;
+            color: #888;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .tab.active {
+            color: #667eea;
+        }
+        
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: #667eea;
+            border-radius: 3px 3px 0 0;
+        }
+        
+        .form {
+            display: none;
+        }
+        
+        .form.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .form h3 {
+            font-size: 24px;
+            margin-bottom: 25px;
+            color: #333;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #555;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 14px 15px 14px 45px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .input-group input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+            outline: none;
+        }
+        
+        .input-group i {
+            position: absolute;
+            left: 15px;
+            top: 42px;
+            color: #888;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(to right, #667eea, #764ba2);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .forgot-password {
+            text-align: right;
+            margin-top: 10px;
+        }
+        
+        .forgot-password a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .forgot-password a:hover {
+            text-decoration: underline;
+        }
+        
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 25px 0;
+        }
+        
+        .divider span {
+            padding: 0 15px;
+            color: #888;
+        }
+        
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #e0e0e0;
+        }
+        
+        .social-login {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .social-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #f5f5f5;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .social-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .social-btn.google { color: #DB4437; }
+        .social-btn.github { color: #333; }
+        .social-btn.twitter { color: #1DA1F2; }
+        
+        .message {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            display: block;
+        }
+        
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .illustration {
+                padding: 30px 20px;
+            }
+            
+            .illustration img {
+                max-width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="illustration">
+            <img src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=500" alt="Authentication">
+            <h2>欢迎使用 MemFireDB</h2>
+            <p>高性能、可扩展的数据库解决方案，为您的应用提供强大的数据存储和管理能力。</p>
+        </div>
+        
+        <div class="form-container">
+            <div class="tabs">
+                <div class="tab active" data-tab="login">登 录</div>
+                <div class="tab" data-tab="signup">注 册</div>
+            </div>
+            
+            <div id="message" class="message"></div>
+            
+            <!-- 登录表单 -->
+            <div class="form active" id="login-form">
+                <h3>登录您的账户</h3>
+                <form id="loginForm">
+                    <div class="input-group">
+                        <label for="login-email">电子邮箱</label>
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" id="login-email" placeholder="请输入您的邮箱" required>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="login-password">密码</label>
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="login-password" placeholder="请输入您的密码" required>
+                    </div>
+                    
+                    <div class="forgot-password">
+                        <a href="#">忘记密码?</a>
+                    </div>
+                    
+                    <button type="submit" class="btn">登 录</button>
+                </form>
+                
+                <div class="divider">
+                    <span>或使用以下方式登录</span>
+                </div>
+                
+                <div class="social-login">
+                    <div class="social-btn google">
+                        <i class="fab fa-google"></i>
+                    </div>
+                    <div class="social-btn github">
+                        <i class="fab fa-github"></i>
+                    </div>
+                    <div class="social-btn twitter">
+                        <i class="fab fa-twitter"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 注册表单 -->
+            <div class="form" id="signup-form">
+                <h3>创建新账户</h3>
+                <form id="signupForm">
+                    <div class="input-group">
+                        <label for="signup-name">用户名</label>
+                        <i class="fas fa-user"></i>
+                        <input type="text" id="signup-name" placeholder="请输入用户名" required>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="signup-email">电子邮箱</label>
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" id="signup-email" placeholder="请输入您的邮箱" required>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="signup-password">密码</label>
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="signup-password" placeholder="至少8位字符" required minlength="8">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="signup-confirm-password">确认密码</label>
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="signup-confirm-password" placeholder="请再次输入密码" required minlength="8">
+                    </div>
+                    
+                    <button type="submit" class="btn">注 册</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 初始化Supabase客户端（替换为您的MemFireDB项目信息）
+        const supabaseUrl = 'https://your-project.supabase.co';
+        const supabaseKey = 'your-supabase-key';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        
+        // DOM元素
+        const tabs = document.querySelectorAll('.tab');
+        const loginForm = document.getElementById('login-form');
+        const signupForm = document.getElementById('signup-form');
+        const loginBtn = document.querySelector('.tabs .tab:first-child');
+        const signupBtn = document.querySelector('.tabs .tab:last-child');
+        const messageDiv = document.getElementById('message');
+        
+        // 切换标签页
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                if (tab.dataset.tab === 'login') {
+                    loginForm.classList.add('active');
+                    signupForm.classList.remove('active');
+                } else {
+                    signupForm.classList.add('active');
+                    loginForm.classList.remove('active');
+                }
+                
+                // 清空消息
+                messageDiv.style.display = 'none';
+                messageDiv.className = 'message';
+                messageDiv.textContent = '';
+            });
+        });
+        
+        // 显示消息
+        function showMessage(message, isSuccess) {
+            messageDiv.textContent = message;
+            messageDiv.className = isSuccess ? 'message success' : 'message error';
+            messageDiv.style.display = 'block';
+            
+            // 5秒后自动隐藏
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 5000);
+        }
+        
+        // 登录表单提交
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            
+            try {
+                // 使用MemFireDB/Supabase登录
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+                
+                if (error) throw error;
+                
+                showMessage('登录成功！正在跳转...', true);
+                
+                // 模拟跳转
+                setTimeout(() => {
+                    showMessage('您已成功登录系统！', true);
+                    // window.location.href = '/dashboard';
+                }, 1500);
+            } catch (error) {
+                showMessage('登录失败: ' + error.message, false);
+            }
+        });
+        
+        // 注册表单提交
+        document.getElementById('signupForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('signup-name').value;
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            const confirmPassword = document.getElementById('signup-confirm-password').value;
+            
+            // 验证密码是否匹配
+            if (password !== confirmPassword) {
+                showMessage('两次输入的密码不匹配！', false);
+                return;
+            }
+            
+            try {
+                // 使用MemFireDB/Supabase注册
+                const { data, error } = await supabase.auth.signUp({
+                    email: email,
+                    password: password,
+                    options: {
+                        data: {
+                            full_name: name
+                        }
+                    }
+                });
+                
+                if (error) throw error;
+                
+                showMessage('注册成功！请检查您的邮箱以验证账户。', true);
+                
+                // 清空表单
+                document.getElementById('signupForm').reset();
+                
+                // 自动切换到登录标签
+                setTimeout(() => {
+                    loginBtn.click();
+                }, 3000);
+            } catch (error) {
+                showMessage('注册失败: ' + error.message, false);
+            }
+        });
+        
+        // 社交登录按钮事件
+        document.querySelectorAll('.social-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                showMessage('社交登录功能需配置OAuth提供商', false);
+            });
+        });
+    </script>
+</body>
+</html>
